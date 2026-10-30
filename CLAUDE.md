@@ -6,7 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Lean 4 + Mathlib formalization of the Tsarev and Pavlov–Sharipov–Svinolupov (PSS) integrability criteria for hydrodynamic-type systems `uₜⁱ = vⁱ(u) uₓⁱ` under strict hyperbolicity. It proves things like these: local integrability ⇔ Riemann coordinates exist and the system is semi-Hamiltonian ⇔ `H = 0 ∧ P = 0`. It also covers the classification of commuting-flow and conservation-density germs, and the generalized hodograph method in both directions.
 
-`README.md` is written in Chinese. It is the authoritative record of what has been proved: a file-by-file results table, the precise statements, and the scope. Formula numbers follow the PSS paper (arXiv:solv-int/9407003). Lean docstrings and comments are in English.
+`README.md` is the record of what has been proved: a file-by-file results table, the precise statements, and the scope. Formula numbers follow the PSS paper (arXiv:solv-int/9407003). Lean docstrings and comments are in English.
+
+The docs come in two languages: `README.md` and `REVIEW.md` are in English, and `README.zh-CN.md` and `REVIEW.zh-CN.md` are their Chinese counterparts. Each pair must say the same thing, so change both files of a pair together. `REVIEW.md` is a dated audit of commit `b0e140b` against the papers. Do not update it to describe later code; write a new review instead.
+
+GitHub does not render `\[ … \]` and drops the backslashes in `\{`, `\\` inside inline `$…$`. In these docs, write display formulas as ```` ```math ```` blocks and inline LaTeX as `` $`…`$ ``. The existing prose writes inline formulas as Unicode inside code spans, such as `` `Γᵢⱼ = ∂ⱼvⁱ / (vʲ − vⁱ)` ``.
 
 ## Commands
 
@@ -60,7 +64,7 @@ The work is organized in layers. Each layer instantiates or uses the one before 
 
 - Every file starts with `module`, uses `public import`, and wraps its contents in `@[expose] public section`. `autoImplicit` is off.
 - `SemiHamiltonian.lean` imports only the top-level result modules. A new file must be reachable through imports from it, or `lake build` will not compile it.
-- When you add a headline theorem, add a `#print axioms` line to `Checks/Axioms.lean`. Also update the Chinese `README.md`: the results table, and the check count it cites (currently 120).
+- When you add a headline theorem, add a `#print axioms` line to `Checks/Axioms.lean`. Also update `README.md` and `README.zh-CN.md`: the results table, and the check count they cite (currently 120).
 - Recurring options, set per file only where needed: `set_option backward.isDefEq.respectTransparency.types false` and `set_option synthInstance.maxSize 1024`.
 - Sign and index conventions:
   - PDE: `uₜⁱ = vⁱ(u) uₓⁱ`.

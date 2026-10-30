@@ -1,143 +1,145 @@
-# 形式化审查报告
+# Formalization review
 
-- **审查对象**：提交 `b0e140b`（Lean `v4.35.0`，mathlib `v4.35.0`）
-- **审查日期**：2026-10-30
-- **审查者**：Claude Code（`claude-opus-5-5`）
-- **审查内容**：
-  1. 公理依赖；
-  2. Lean 定义是否与论文一致；
-  3. 主要定理的 Lean 表述是否与论文一致。
-- **对照文献**：
-  - Pavlov–Sharipov–Svinolupov 论文（以下简称 PSS，[arXiv:solv-int/9407003](https://arxiv.org/abs/solv-int/9407003)）的 TeX 源文件，逐个公式对照。
-  - Tsarev 1990 年的原文未能获得。Tsarev 部分对照的是 PSS 引用的 (1.4)，以及这些结果的标准表述。
+English | [中文](REVIEW.zh-CN.md)
 
-## 结论
+- **Reviewed**: commit `b0e140b` (Lean `v4.35.0`, mathlib `v4.35.0`)
+- **Date**: 2026-10-30
+- **Reviewer**: Claude Code (`claude-opus-5-5`)
+- **Scope**:
+  1. axiom dependencies;
+  2. whether the Lean definitions agree with the papers;
+  3. whether the Lean statements of the main theorems agree with the papers.
+- **References compared**:
+  - The TeX source of the Pavlov–Sharipov–Svinolupov paper (PSS below, [arXiv:solv-int/9407003](https://arxiv.org/abs/solv-int/9407003)), formula by formula.
+  - Tsarev's 1990 paper was not available. The Tsarev part was compared with (1.4) as quoted by PSS and with the standard statements of these results.
 
-- 未发现数学错误，也未发现与论文不一致的定义。
-- 所有声明都只依赖 Lean 的三个标准公理。
-- PSS 的定理 2 和定理 4 没有形式化，Lean 直接用它们的结论作为定义。这两条属于标准内容。
-- 另有几处范围上的收窄，见第 4 节。
+## Summary
 
-## 1. 公理依赖
+- No mathematical errors were found, and no definition disagrees with the papers.
+- Every declaration depends only on Lean's three standard axioms.
+- PSS Theorems 2 and 4 are not formalized; Lean uses their conclusions as definitions. Both are standard material.
+- A few points narrow the scope; see Section 4.
 
-**只用了 Lean 的三个标准公理：`propext`、`Classical.choice`、`Quot.sound`。**
+## 1. Axiom dependencies
 
-- **全量扫描。** 用附录中的脚本遍历了项目的全部 1888 个声明，其中定理 1511 个、定义 359 个，逐个收集公理依赖。
-  - 没有一个声明依赖上述三条以外的公理。
-  - 项目中没有 `axiom`、`opaque` 或 `unsafe` 声明。
-- **`Checks/Axioms.lean`。** 这里列出的 120 个主要定理都只依赖上述三条，与 README 的说法一致。
-- **模块系统下检查是否可靠。** 项目使用 Lean 的模块系统。导入方默认只看到被导入模块的公开接口。
-  - 查阅 Lean 4.35 的 `Lean/Util/CollectAxioms.lean` 后确认：每个模块写出 `.olean` 时，会用包含全部证明体的环境，预先计算每个声明的公理依赖，并随模块导出。
-  - 因此跨模块的 `#print axioms` 能看到证明内部，证明里的 `sorry` 不会被漏掉。
-- **源码扫描。** 没有发现以下写法：
-  - `sorry`、`admit`
-  - `native_decide`、`implemented_by`、`@[extern]`
+**Only Lean's three standard axioms are used: `propext`, `Classical.choice`, `Quot.sound`.**
+
+- **Full scan.** The script in the appendix goes through all 1888 declarations of the project (1511 theorems, 359 definitions) and collects the axioms each one depends on.
+  - No declaration depends on any axiom outside these three.
+  - The project contains no `axiom`, `opaque` or `unsafe` declarations.
+- **`Checks/Axioms.lean`.** The 120 main theorems listed there all depend only on these three axioms, as the README states.
+- **Reliability of the check under the module system.** The project uses Lean's module system, in which an importing module by default sees only the public interface of the modules it imports.
+  - Lean 4.35's `Lean/Util/CollectAxioms.lean` shows that when a module's `.olean` is written, the axiom dependencies of every declaration are precomputed in an environment that contains all proof bodies, and exported with the module.
+  - So `#print axioms` across module boundaries does see inside proofs, and a `sorry` inside a proof cannot be missed.
+- **Source scan.** None of the following occur:
+  - `sorry`, `admit`
+  - `native_decide`, `implemented_by`, `@[extern]`
   - `debug.skipKernelTC`
-  - 自定义的宏或记号
-- **构建与检查。**
-  - `lake build` 成功，共 2996 个任务，0 个错误。
-  - `Checks/` 下的 9 个文件全部通过，只有 linter 提示。
+  - custom macros or notation
+- **Build and checks.**
+  - `lake build` succeeds: 2996 jobs, 0 errors.
+  - All 9 files in `Checks/` pass, with linter messages only.
 
-## 2. 定义对照
+## 2. Definitions
 
-| PSS / Tsarev | Lean | 结论 |
+| PSS / Tsarev | Lean | Verdict |
 |---|---|---|
-| (1.4) 半哈密顿条件 | [`IsSemiHamiltonian`](SemiHamiltonian/Basic.lean)、`Smooth.tsarevCoefficient`、`ofSpeeds_semiHamiltonian_iff` | 一致，只有指标改名 |
-| (2.8) 标架括号与结构系数 | [`FrameData.bracket`](SemiHamiltonian/PSS/Eigenframe.lean)，`structureCoeff r i j` 对应 `c^r_{ij}` | 一致 |
-| (4.1) Nijenhuis 张量、(4.2) Haantjes 张量 | `FrameData.nijenhuis`、`FrameData.haantjes`、`TensorRecipe.N` | 一致 |
-| (4.4) Nijenhuis 张量的分量公式 | [`matrixNijenhuis`](SemiHamiltonian/Geometry/MatrixTorsion.lean) | 逐项一致 |
-| (4.3) Haantjes 张量的特征标架分解 | `FrameData.haantjes_basis` | 一致 |
-| (2.5) 极化形式、(2.9) | `polarizedSymmetry`、`PSS.polarized`、`SymmetryValuesAdmissible` | 一致，符号也一致 |
-| (4.6)、(4.9)、(4.12)、(4.15)、(4.18) | [`TensorRecipe.FN / K / M / Q / P`](SemiHamiltonian/PSS/TensorRecipe.lean) | 逐项一致，系数 4、−2、−2 也一致 |
-| (4.7) α | [`PSS.alpha`](SemiHamiltonian/PSS/Polynomial.lean) | 一致 |
-| (2.17) 守恒律存在通量 | [`IsMatrixConservationLaw`](SemiHamiltonian/Geometry/ConservationJets.lean#L23)：dq = dh∘M | 一致 |
-| Tsarev 交换流方程 ∂ⱼwⁱ = Γᵢⱼ(wʲ−wⁱ) | `DiagonalSystem.IsCommutingSpeed` | 一致 |
-| Tsarev 守恒密度方程 ∂ⱼ∂ᵢh = Γᵢⱼ∂ᵢh + Γⱼᵢ∂ⱼh | `IsDensityGradient`、`IsDensity` | 一致 |
-| Tsarev hodograph 公式 wⁱ(u) = x + t·vⁱ(u) | `HodographRelation` | 一致，符号与论文的 uₜ = A·uₓ 相同 |
+| (1.4) semi-Hamiltonian condition | [`IsSemiHamiltonian`](SemiHamiltonian/Basic.lean), `Smooth.tsarevCoefficient`, `ofSpeeds_semiHamiltonian_iff` | Agrees; indices renamed only |
+| (2.8) frame bracket and structure coefficients | [`FrameData.bracket`](SemiHamiltonian/PSS/Eigenframe.lean); `structureCoeff r i j` is `c^r_{ij}` | Agrees |
+| (4.1) Nijenhuis tensor, (4.2) Haantjes tensor | `FrameData.nijenhuis`, `FrameData.haantjes`, `TensorRecipe.N` | Agrees |
+| (4.4) components of the Nijenhuis tensor | [`matrixNijenhuis`](SemiHamiltonian/Geometry/MatrixTorsion.lean) | Agrees term by term |
+| (4.3) eigenframe decomposition of the Haantjes tensor | `FrameData.haantjes_basis` | Agrees |
+| (2.5) polarized, (2.9) | `polarizedSymmetry`, `PSS.polarized`, `SymmetryValuesAdmissible` | Agrees, including signs |
+| (4.6), (4.9), (4.12), (4.15), (4.18) | [`TensorRecipe.FN / K / M / Q / P`](SemiHamiltonian/PSS/TensorRecipe.lean) | Agrees term by term, including the coefficients 4, −2, −2 |
+| (4.7) α | [`PSS.alpha`](SemiHamiltonian/PSS/Polynomial.lean) | Agrees |
+| (2.17) a conservation law has a flux | [`IsMatrixConservationLaw`](SemiHamiltonian/Geometry/ConservationJets.lean#L23): dq = dh∘M | Agrees |
+| Tsarev's commuting-flow equation ∂ⱼwⁱ = Γᵢⱼ(wʲ−wⁱ) | `DiagonalSystem.IsCommutingSpeed` | Agrees |
+| Tsarev's conservation-density equation ∂ⱼ∂ᵢh = Γᵢⱼ∂ᵢh + Γⱼᵢ∂ⱼh | `IsDensityGradient`, `IsDensity` | Agrees |
+| Tsarev's hodograph formula wⁱ(u) = x + t·vⁱ(u) | `HodographRelation` | Agrees; same sign as the paper's uₜ = A·uₓ |
 
-补充核实：
+Further checks:
 
-- **光滑性。** `ContDiffOn ℝ ∞` 中的 `∞` 是经强制转换的 `(⊤ : ℕ∞)`，即 C∞。全项目没有用 `⊤` 或 `ω` 表示的解析条件。
-- **导数和括号。**
-  - 导数都是真实的 Fréchet 导数。
-  - `fieldBracket` 已证明等于 Mathlib 的 `VectorField.lieBracket`。
-  - `Smooth.Functions U` 是开集 U 上真正的 C∞ 函数构成的代数。
-- **对角公式经过核对。** `DiagonalTensor` 中手工推导的对角坐标公式（如 `Kcycle`），已由 [`DiagonalRecipe.P_basis`](SemiHamiltonian/PSS/DiagonalRecipe.lean#L122) 证明等于按论文字面构造的内在张量 P 在坐标基上的取值。
+- **Smoothness.** The `∞` in `ContDiffOn ℝ ∞` is the coerced `(⊤ : ℕ∞)`, i.e. C∞. The project never uses `⊤` or `ω`, which would mean analyticity.
+- **Derivatives and brackets.**
+  - All derivatives are actual Fréchet derivatives.
+  - `fieldBracket` is proved equal to mathlib's `VectorField.lieBracket`.
+  - `Smooth.Functions U` is the algebra of actual C∞ functions on the open set U.
+- **The diagonal formulas are checked.** The hand-derived formulas in diagonal coordinates in `DiagonalTensor` (for example `Kcycle`) are proved by [`DiagonalRecipe.P_basis`](SemiHamiltonian/PSS/DiagonalRecipe.lean#L122) to equal the values on the coordinate basis of the intrinsic tensor P, built literally from the paper's formulas.
 
-## 3. 定理表述对照
+## 3. Theorem statements
 
-| PSS / Tsarev | Lean 主定理 |
+| PSS / Tsarev | Lean main theorem |
 |---|---|
-| 定理 1、3：对称丰富 ⇔ 可对角化且半哈密顿 | `Geometry.locallyRichMatrix_iff_locallySemiHamiltonian` |
-| 定理 5：守恒律丰富 ⇔ 可对角化且半哈密顿 | `Geometry.locallyRichConservationLaws_iff_locallySemiHamiltonian` |
-| 定理 8：H = 0 ⇔ 可用点变换对角化 | `Geometry.haantjes_iff_locally_diagonalizable` |
-| 定理 9：P = 0 ⇔ 半哈密顿 | `Geometry.pss_iff_locallyAxisIntegrable`、`Geometry.locallyRichMatrix_iff_tensors`；对角坐标下为 `DiagonalTensor.semiHamiltonian_iff_P_zero` |
-| (4.8)：α = 0 ⇔ 半哈密顿 | `PSS.semiHamiltonian_iff_alpha_zero`（由 `alpha_eq` 证明，不是假设） |
-| (4.19)，包括重复指标 | [`DiagonalTensor.P_eq`](SemiHamiltonian/PSS/DiagonalTensor.lean#L117) |
-| Tsarev：半哈密顿 ⇔ 交换流依赖 n 个单变量任意函数 | `Smooth.semiHamiltonian_iff_locallyAxisSolvable`、`Smooth.tsarev_iff_locallyAxisSolvable` |
-| Tsarev 的 hodograph 方法 | `Smooth.generalized_hodograph`；反向完备性 `Smooth.generalized_hodograph_converse` 是论文以外的补充 |
+| Theorems 1, 3: rich symmetries ⇔ diagonalizable and semi-Hamiltonian | `Geometry.locallyRichMatrix_iff_locallySemiHamiltonian` |
+| Theorem 5: rich conservation laws ⇔ diagonalizable and semi-Hamiltonian | `Geometry.locallyRichConservationLaws_iff_locallySemiHamiltonian` |
+| Theorem 8: H = 0 ⇔ diagonalizable by a point transformation | `Geometry.haantjes_iff_locally_diagonalizable` |
+| Theorem 9: P = 0 ⇔ semi-Hamiltonian | `Geometry.pss_iff_locallyAxisIntegrable`, `Geometry.locallyRichMatrix_iff_tensors`; in diagonal coordinates `DiagonalTensor.semiHamiltonian_iff_P_zero` |
+| (4.8): α = 0 ⇔ semi-Hamiltonian | `PSS.semiHamiltonian_iff_alpha_zero` (proved through `alpha_eq`, not assumed) |
+| (4.19), including repeated indices | [`DiagonalTensor.P_eq`](SemiHamiltonian/PSS/DiagonalTensor.lean#L117) |
+| Tsarev: semi-Hamiltonian ⇔ commuting flows depend on n arbitrary functions of one variable | `Smooth.semiHamiltonian_iff_locallyAxisSolvable`, `Smooth.tsarev_iff_locallyAxisSolvable` |
+| Tsarev's generalized hodograph method | `Smooth.generalized_hodograph`; the converse (completeness) `Smooth.generalized_hodograph_converse` goes beyond the papers |
 
-补充核实：
+Further checks:
 
-- **没有隐藏的额外假设。**
-  - 打印了上述定理在内核中的完整签名。几何层主定理的假设只有三条：U 是开集、M 在 U 上 C∞、M 在 U 上逐点严格双曲。
-  - 源码中有 16 处 `include`，都没有给主定理增加额外假设。
-- **定理不是空洞的。** 检查文件对每个关键谓词都给出了正例和反例：
-  - `Checks/PSSExample.lean` 中，H = 0 但 P ≠ 0 的系统被证明不丰富、不可积。
-  - `Checks/HaantjesExample.lean` 中，H ≠ 0 的系统同样被证明不丰富、不可积。
-  - 两个文件里还有正例，以及经过非线性坐标变换后的正例。
-- **函数芽分类有实际内容。** `commutingSpeedGermEquiv`、`densityGermEquiv`、`originalConservationGermEquiv` 都是对自然映射（取各坐标轴上的函数芽）应用 `Equiv.ofBijective` 得到的。它们不是"基数相等就存在双射"那种空洞结论。
-- **必要性没有预设坐标。** `LocallyRichMatrix` 与 `LocallyRichConservationLaws` 的定义中不含特征标架或 Riemann 坐标。坐标是由 Haantjes 条件推出来的。
+- **No hidden extra hypotheses.**
+  - The full kernel signatures of the theorems above were printed. The main theorems of the geometric layer have exactly three hypotheses: U is open, M is C∞ on U, and M is strictly hyperbolic at every point of U.
+  - The 16 `include` commands in the sources add no hypotheses to the main theorems.
+- **The theorems are not vacuous.** The check files give positive and negative instances of every key predicate:
+  - In `Checks/PSSExample.lean`, a system with H = 0 but P ≠ 0 is proved neither rich nor integrable.
+  - In `Checks/HaantjesExample.lean`, a system with H ≠ 0 is likewise proved neither rich nor integrable.
+  - Both files also contain positive instances, including after a nonlinear change of coordinates.
+- **The germ classifications have content.** `commutingSpeedGermEquiv`, `densityGermEquiv` and `originalConservationGermEquiv` are all obtained by applying `Equiv.ofBijective` to the natural map that takes germs along the coordinate axes. They are not vacuous statements of the form "equal cardinality gives some bijection".
+- **Necessity does not presuppose coordinates.** The definitions of `LocallyRichMatrix` and `LocallyRichConservationLaws` mention no eigenframe and no Riemann coordinates. The coordinates are derived from the Haantjes condition.
 
-## 4. 差异与注意事项
+## 4. Differences and caveats
 
-按重要性排序。
+In order of importance.
 
-1. **PSS 定理 2 没有被证明，它的结论被直接当作定义。**
-   - PSS 定义 1 说"水动力对称"是两个 PDE 流相容。(2.4)+(2.5) 是定理 2 推出的等价刻画。
-   - Lean 直接用 (2.4)+(2.5) 定义 [`Smooth.IsHydrodynamicSymmetry`](SemiHamiltonian/Geometry/SymmetryTransport.lean#L16)。
-   - 有两处注释陈述了没有证明的事实：
-     - [InvariantSymmetry.lean:11](SemiHamiltonian/PSS/InvariantSymmetry.lean#L11) 说"这就是两个流交换的条件"。
-     - [Basic.lean:72](SemiHamiltonian/Basic.lean#L72) 说 `flowBracketCoeff` 是流交换子中 uₓⁱuₓʲ 的系数。
-   - 对角情形下，这个定义等价于 Tsarev 的标准交换条件。
-   - 这属于标准内容，经确认不计划形式化。
-2. **PSS 定理 4 没有被形式化。**
-   - 守恒律直接用"存在通量 dq = dh∘M"来定义。
-   - 论文的 (2.14)–(2.16)（泛函守恒 ⇔ 存在通量）和不变形式 (2.18) 都没有出现在代码中。
-   - 这属于标准内容，经确认不计划形式化。
-3. **只覆盖实特征值。** [`StrictHyperbolicAt`](SemiHamiltonian/Geometry/SmoothEigenframe.lean#L36) 要求特征值是实的且两两不同。论文的"一般位置"只要求互异，所以复特征值的情形不在 Lean 结论的范围内。
-4. **"依赖 n 个单变量任意函数"的形式化方式是自选的。** 论文中这一说法是非形式的。Lean 给出了四种版本：
-   - 基点值任意可取：`LocallyRichMatrix`
-   - 一、二阶 jet 任意可取：`LocallyRichConservationLaws`
-   - Riemann 坐标轴上任意给定初值：`LocallyAxisSolvable`
-   - 函数芽双射
+1. **PSS Theorem 2 is not proved; its conclusion is used as a definition.**
+   - PSS Definition 1 calls a system a "hydrodynamic symmetry" when the two PDE flows are compatible. (2.4)+(2.5) is the equivalent characterization given by Theorem 2.
+   - Lean defines [`Smooth.IsHydrodynamicSymmetry`](SemiHamiltonian/Geometry/SymmetryTransport.lean#L16) directly by (2.4)+(2.5).
+   - Two docstrings state facts that are not proved:
+     - [InvariantSymmetry.lean:11](SemiHamiltonian/PSS/InvariantSymmetry.lean#L11) says this is the condition that the two flows commute.
+     - [Basic.lean:72](SemiHamiltonian/Basic.lean#L72) says `flowBracketCoeff` is the coefficient of uₓⁱuₓʲ in the commutator of the flows.
+   - In the diagonal case this definition is equivalent to Tsarev's standard commutation condition.
+   - This is standard material; it has been decided not to formalize it.
+2. **PSS Theorem 4 is not formalized.**
+   - Conservation laws are defined directly as "a flux dq = dh∘M exists".
+   - Neither the paper's (2.14)–(2.16) (a conserved functional ⇔ a flux exists) nor the invariant form (2.18) appears in the code.
+   - This is standard material; it has been decided not to formalize it.
+3. **Only real eigenvalues are covered.** [`StrictHyperbolicAt`](SemiHamiltonian/Geometry/SmoothEigenframe.lean#L36) requires real, pairwise distinct eigenvalues. The paper's "general position" only requires distinct eigenvalues, so the case of complex eigenvalues is outside the Lean results.
+4. **"Depends on n arbitrary functions of one variable" is formalized by choice.** The paper's phrase is informal. Lean gives four versions:
+   - arbitrary values at the base point: `LocallyRichMatrix`
+   - arbitrary first- and second-order jets: `LocallyRichConservationLaws`
+   - arbitrary data on the axes of Riemann coordinates: `LocallyAxisSolvable`
+   - bijections of function germs
 
-   必要性方向使用最弱的版本，所以结论比论文的陈述更强。
+   The necessity direction uses the weakest version, so its conclusion is stronger than the paper's statement.
 
-   需要注意，[`LocallyOriginalConservationParametrized`](SemiHamiltonian/Geometry/ConservationClassification.lean#L206) 的定义本身就要求存在 Riemann 坐标。真正不预设坐标的守恒律必要性，由 jet 版本给出。
-5. **没有形式化 Frölicher–Nijenhuis 括号的一般理论**，即论文第 3 节和定理 6、7。
-   - K 是直接按 (4.6) 的展开式定义的。
-   - Lean 证明了按此定义的 K、M、Q、P 都是 C∞-线性的张量（`PSS/Tensoriality.lean`），并且在 C∞ 坐标变换下协变（`Geometry/ChartTransport.lean`）。
-   - 这为 (4.6) 没有笔误提供了独立旁证。
-6. **以下内容不在范围内：**
-   - Tsarev 论文中关于哈密顿结构的部分，即 Dubrovin–Novikov 括号与平坦度量；
-   - README"本阶段以外的内容"一节列出的无限 jet 代数、高阶消失与唯一性、拟平凡性。
-7. **论文自身有两处笔误，形式化没有受影响。**
-   - (2.16) 中的 ∂ⱼ(∂ₖAᵏᵢ) 漏了 f，应为 ∂ⱼ(∂ₖf·Aᵏᵢ)。
-   - (2.23) 前一句的 "(2.12) should be trivial" 应为 (2.21)。
-8. **维护方面。**
-   - 构建时有 7 处使用已弃用名字的警告，例如 `continuousOn_finset_sum`。升级 mathlib 时这些地方会报错。
-   - 另有约 100 条 linter 提示，主要是未使用的 section 变量和 simp 参数。
+   Note that the definition of [`LocallyOriginalConservationParametrized`](SemiHamiltonian/Geometry/ConservationClassification.lean#L206) itself requires Riemann coordinates to exist. Necessity for conservation laws without presupposing coordinates is given by the jet version.
+5. **The general theory of the Frölicher–Nijenhuis bracket is not formalized** (Section 3 and Theorems 6, 7 of the paper).
+   - K is defined directly by the expanded formula (4.6).
+   - Lean proves that K, M, Q, P defined this way are C∞-linear tensors (`PSS/Tensoriality.lean`) and covariant under C∞ changes of coordinates (`Geometry/ChartTransport.lean`).
+   - This is independent evidence that (4.6) contains no typo.
+6. **Out of scope:**
+   - the Hamiltonian-structure part of Tsarev's paper, that is, Dubrovin–Novikov brackets and flat metrics;
+   - the items listed in the README section "Out of scope for now": infinite jet algebras, higher-order vanishing and uniqueness, quasi-triviality.
+7. **Two typos in the paper itself; the formalization is not affected.**
+   - In (2.16), ∂ⱼ(∂ₖAᵏᵢ) is missing f; it should be ∂ⱼ(∂ₖf·Aᵏᵢ).
+   - In the sentence before (2.23), "(2.12) should be trivial" should refer to (2.21).
+8. **Maintenance.**
+   - The build reports 7 uses of deprecated names, for example `continuousOn_finset_sum`. These will become errors when mathlib is upgraded.
+   - There are about 100 further linter messages, mostly unused section variables and unused simp arguments.
 
-## 5. 审查方法与局限
+## 5. Method and limitations
 
-- **未逐行阅读证明。** 1.5 万行证明的正确性由 Lean 内核保证。审查集中在内核无法保证的部分：定义是否忠实于论文、主定理的表述与假设、定理是否空洞。
-- **中间引理未逐一核对。** Darboux 模块等中间引理的表述没有逐一对照论文，因为它们只服务于最终定理的证明。不过已核对：`local_existsUnique_smooth_darboux_of_functions` 中的相容条件 ∂ₖΓᵢⱼ = ΓᵢⱼΓⱼₖ + ΓᵢₖΓₖⱼ − ΓᵢⱼΓᵢₖ，与交换流方程混合偏导相容的直接计算一致。
-- **Tsarev 部分的对照有局限。** 未能获得 Tsarev 原文，这部分只对照了 PSS 的引用和标准表述。
+- **The proofs were not read line by line.** The Lean kernel guarantees the correctness of the 15,000 lines of proofs. The review concentrated on what the kernel cannot guarantee: whether the definitions are faithful to the papers, the statements and hypotheses of the main theorems, and whether the theorems are vacuous.
+- **Intermediate lemmas were not compared one by one.** The statements of intermediate lemmas, for example in the Darboux modules, were not each compared with the papers, since they only serve the proofs of the final theorems. One check was made: the compatibility condition ∂ₖΓᵢⱼ = ΓᵢⱼΓⱼₖ + ΓᵢₖΓₖⱼ − ΓᵢⱼΓᵢₖ in `local_existsUnique_smooth_darboux_of_functions` agrees with a direct computation of mixed-partial compatibility for the commuting-flow equations.
+- **The Tsarev comparison is limited.** Tsarev's original paper was not available, so this part was compared only with PSS's citations and the standard statements.
 
-## 附录：全量公理扫描脚本
+## Appendix: full axiom scan script
 
-把下面的内容存为项目目录以外的任意 `.lean` 文件，在项目根目录下运行 `lake env lean <文件路径>`（需要先执行 `lake build`）。
+Save the following as a `.lean` file anywhere outside the project directory, and run `lake env lean <path>` from the project root (after `lake build`).
 
 ```lean
 import SemiHamiltonian
@@ -166,7 +168,7 @@ open Lean Elab Command
   logInfo m!"non-standard axioms: {offenders.size} {offenders.toList.take 20}"
 ```
 
-在 `b0e140b` 上的输出：
+Output on `b0e140b`:
 
 ```text
 declarations scanned: 1888
